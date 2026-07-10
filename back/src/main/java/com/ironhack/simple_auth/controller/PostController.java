@@ -8,8 +8,6 @@ import com.ironhack.simple_auth.model.Comment;
 import com.ironhack.simple_auth.model.Post;
 import com.ironhack.simple_auth.repository.CommentRepository;
 import com.ironhack.simple_auth.repository.PostRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,9 +22,6 @@ public class PostController {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     public PostController(PostRepository postRepository, CommentRepository commentRepository) {
         this.postRepository = postRepository;
         this.commentRepository = commentRepository;
@@ -39,18 +34,9 @@ public class PostController {
     }
 
     @GetMapping("/search")
-    @SuppressWarnings("unchecked")
     public List<SearchResult> search(@RequestParam(name = "q", defaultValue = "") String q) {
-        String sql = "SELECT id, title, body FROM posts " +
-                "WHERE title LIKE '%" + q + "%' OR body LIKE '%" + q + "%'";
-
-        List<Object[]> rows = entityManager.createNativeQuery(sql).getResultList();
-
-        return rows.stream()
-                .map(row -> new SearchResult(
-                        row[0],
-                        row[1] != null ? row[1].toString() : null,
-                        row[2] != null ? row[2].toString() : null))
+        return postRepository.findByTitleContainingIgnoreCaseOrBodyContainingIgnoreCase(q, q).stream()
+                .map(post -> new SearchResult(post.getId(), post.getTitle(), post.getBody()))
                 .toList();
     }
 
